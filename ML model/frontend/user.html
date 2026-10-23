@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LifeLink - In-Car Driver Telemetry & Crash Safety Portal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="/static/js/theme.js"></script>
+  <style>
+    .device-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(14, 20, 32, 0.7);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .device-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .device-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(0, 229, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-cyan);
+    }
+    .connection-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+    .pill-connected {
+      background: rgba(0, 230, 118, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+    }
+    .pill-disconnected {
+      background: rgba(255, 23, 68, 0.15);
+      color: var(--accent-danger);
+      border: 1px solid rgba(255, 23, 68, 0.3);
+    }
+    .gps-box {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .formula-tag {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent-cyan);
+      background: rgba(0, 229, 255, 0.08);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+    .dispatch-card {
+      background: rgba(24, 10, 14, 0.85);
+      border: 1px solid rgba(255, 23, 68, 0.4);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Header -->
+  <nav class="navbar">
+    <a href="/" class="nav-brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>LifeLink Driver Monitor</h1>
+        <p>Live In-Car OBD-II & Safety HUD</p>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="/user" class="nav-link active">Driver HUD</a>
+      <button class="btn btn-outline" id="btnOpenObdConfig" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+        ⚙️ iOBD Detector
+      </button>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch Light (Red & White) / Dark HUD">
+        <span class="theme-toggle-icon">☀️</span>
+        <span class="theme-toggle-text">Red & White</span>
+      </button>
+      <div class="status-badge" id="driverStatusBadge">
+        <span class="status-dot"></span>
+        NORMAL MONITORING
+      </div>
+      <button class="btn btn-secondary" onclick="logoutUser()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+        Logout
+      </button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Driver & OBD Profile Summary Bar -->
+    <div id="driverProfileBanner" style="background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 12px; padding: 0.75rem 1.25rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+      <div>
+        <strong id="bannerDriverName" style="color: #fff;">Alex Morgan</strong> &bull; 
+        <span id="bannerVehicleInfo" style="color: var(--accent-cyan); font-family: var(--font-mono);">KA-05-LL-2026 (Honda City ZX)</span>
+      </div>
+      <div style="font-size: 0.78rem; color: var(--text-muted);">
+        iOBD: <span id="bannerObdName" style="color: #fff; font-family: var(--font-mono);">ELM327-v2.1</span> | 
+        MAC: <span id="bannerObdMac" style="color: #fff; font-family: var(--font-mono);">00:1D:A5:68:90:E4</span> | 
+        Emergency Contact: <span id="bannerEmergencyContact" style="color: #ffab00;">+91-98765-99881</span>
+      </div>
+    </div>
+
+    <!-- Bluetooth OBD-II Connection Bar -->
+    <div class="device-panel">
+      <div class="device-info">
+        <div class="device-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5 12 23V1l5.5 5.5-11 11"/></svg>
+        </div>
+        <div>
+          <div style="font-weight: 700; color: #fff; font-size: 1rem;" id="vehicleIdLabel">
+            KA-05-LL-2026 (Alex Morgan)
+          </div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 0.75rem; align-items: center; margin-top: 2px;">
+            <span>OBD-II Bluetooth Dongle</span>
+            <span class="connection-pill pill-connected" id="bluetoothPill">
+              <span class="status-dot"></span> <span id="btStatusText">SIMULATOR ACTIVE</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gps-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        GPS: <span id="gpsCoordsText" class="text-cyan">12.9716° N, 77.5946° E</span> (Bangalore, KA)
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <!-- Web Bluetooth / Web Serial button -->
+        <button class="btn btn-outline" id="btnPairBluetooth" title="Connect physical Bluetooth OBD dongle via Web Bluetooth/Serial">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5 12 23V1l5.5 5.5-11 11"/></svg>
+          Pair Bluetooth OBD
+        </button>
+        <!-- Windows COM Port Select -->
+        <button class="btn btn-secondary" id="btnComPorts">
+          Serial COM Ports
+        </button>
+      </div>
+    </div>
+
+    <!-- Cluster Displays: Speedometer & G-Force Meter -->
+    <div class="cluster-display">
+      <!-- Speedometer Gauge -->
+      <div class="glass-card gauge-center">
+        <div class="card-header" style="width: 100%;">
+          <div class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            OBD-II Vehicle Speed
+          </div>
+          <span class="formula-tag">v_t (km/h)</span>
+        </div>
+        <div class="gauge-circle">
+          <svg class="gauge-svg" viewBox="0 0 200 200">
+            <circle class="gauge-bg" cx="100" cy="100" r="85"></circle>
+            <circle class="gauge-meter" id="speedGaugeRing" cx="100" cy="100" r="85"></circle>
+          </svg>
+          <div class="gauge-text-overlay">
+            <div class="gauge-number" id="speedDisplayNum">65</div>
+            <div class="gauge-sub">KM/H</div>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; width: 85%; margin-top: 1rem; font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted);">
+          <div>RPM: <span class="text-cyan" id="rpmDisplayVal">2240</span></div>
+          <div>Throttle: <span class="text-cyan" id="throttleDisplayVal">28%</span></div>
+          <div>Coolant: <span class="text-cyan" id="coolantDisplayVal">89°C</span></div>
+        </div>
+      </div>
+
+      <!-- Impact G-Force Magnitude Gauge (Equation 1) -->
+      <div class="glass-card gauge-center">
+        <div class="card-header" style="width: 100%;">
+          <div class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+            Total Impact G-Force
+          </div>
+          <span class="formula-tag">A = &radic;(ax&sup2; + ay&sup2; + az&sup2;)</span>
+        </div>
+        <div class="gauge-circle">
+          <svg class="gauge-svg" viewBox="0 0 200 200">
+            <circle class="gauge-bg" cx="100" cy="100" r="85"></circle>
+            <circle class="gauge-meter" id="gForceGaugeRing" cx="100" cy="100" r="85" style="stroke: #00e676;"></circle>
+          </svg>
+          <div class="gauge-text-overlay">
+            <div class="gauge-number" id="gForceDisplayNum">1.02</div>
+            <div class="gauge-sub">G-FORCE</div>
+          </div>
+        </div>
+        <!-- 3 Axis accelerometer breakdown -->
+        <div class="axis-bars" style="width: 85%;">
+          <div class="axis-row">
+            <span class="axis-tag">aX:</span>
+            <div class="axis-track"><div class="axis-fill" id="axBar" style="width: 10%;"></div></div>
+            <span class="axis-val" id="axVal">0.05g</span>
+          </div>
+          <div class="axis-row">
+            <span class="axis-tag">aY:</span>
+            <div class="axis-track"><div class="axis-fill" id="ayBar" style="width: 8%;"></div></div>
+            <span class="axis-val" id="ayVal">0.02g</span>
+          </div>
+          <div class="axis-row">
+            <span class="axis-tag">aZ:</span>
+            <div class="axis-track"><div class="axis-fill" id="azBar" style="width: 50%;"></div></div>
+            <span class="axis-val" id="azVal">0.99g</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-Condition Parameter HUD (Table 1 & Equations 2, 3, 4, 5) -->
+    <div class="hud-grid">
+      <!-- Deceleration Drop (Delta v) -->
+      <div class="metric-card" id="cardSpeedDrop">
+        <div class="metric-label">
+          <span>Sudden Speed Drop (&Delta;v)</span>
+          <span class="formula-tag">&Delta;v = v_{t-1} - v_t</span>
+        </div>
+        <div class="metric-value-wrap">
+          <div class="metric-value" id="valDeltaV">0.0</div>
+          <div class="metric-unit">km/h</div>
+        </div>
+        <div class="metric-bar-bg">
+          <div class="metric-bar-fill" id="barDeltaV" style="width: 0%;"></div>
+        </div>
+        <div class="metric-threshold-tag">
+          <span>Threshold: &gt; 20 km/h</span>
+          <span id="tagDeltaVStatus">NOMINAL</span>
+        </div>
+      </div>
+
+      <!-- Abnormal Tilt Angle (Theta) -->
+      <div class="metric-card" id="cardTilt">
+        <div class="metric-label">
+          <span>Vehicle Tilt / Rollover (&theta;)</span>
+          <span class="formula-tag">&theta; = arctan(y/x)</span>
+        </div>
+        <div class="metric-value-wrap">
+          <div class="metric-value" id="valTilt">1.4</div>
+          <div class="metric-unit">degrees</div>
+        </div>
+        <div class="metric-bar-bg">
+          <div class="metric-bar-fill" id="barTilt" style="width: 2%;"></div>
+        </div>
+        <div class="metric-threshold-tag">
+          <span>Threshold: &gt; 45° (Flip)</span>
+          <span id="tagTiltStatus">UPRIGHT</span>
+        </div>
+      </div>
+
+      <!-- Weighted Decision Score (D) -->
+      <div class="metric-card" id="cardDecisionD">
+        <div class="metric-label">
+          <span>Weighted Decision Score (D)</span>
+          <span class="formula-tag">D = 0.4A + 0.3&Delta;v + 0.3&theta;</span>
+        </div>
+        <div class="metric-value-wrap">
+          <div class="metric-value" id="valDecisionD">0.08</div>
+          <div class="metric-unit">/ 1.0</div>
+        </div>
+        <div class="metric-bar-bg">
+          <div class="metric-bar-fill" id="barDecisionD" style="width: 8%;"></div>
+        </div>
+        <div class="metric-threshold-tag">
+          <span>Threshold T: &gt; 0.68</span>
+          <span id="tagDecisionStatus">SAFE</span>
+        </div>
+      </div>
+
+      <!-- Post-Accident Status & False Alarm Suppression -->
+      <div class="metric-card" id="cardCrashStatus">
+        <div class="metric-label">
+          <span>Post-Accident Engine</span>
+          <span class="formula-tag">Strictly Post-Crash</span>
+        </div>
+        <div class="metric-value-wrap">
+          <div class="metric-value" id="valCrashState" style="font-size: 1.6rem; color: var(--accent-green);">
+            SAFE CRUISE
+          </div>
+        </div>
+        <div class="metric-bar-bg">
+          <div class="metric-bar-fill" id="barCrashState" style="width: 100%; background: var(--accent-green);"></div>
+        </div>
+        <div class="metric-threshold-tag">
+          <span id="valSuppressionReason">Multi-condition validation active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Dispatched Emergency Banner (Displayed if timer expires) -->
+    <div class="dispatch-card" id="dispatchedEmergencyBanner">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <h3 style="color: var(--accent-danger); font-size: 1.4rem; display: flex; align-items: center; gap: 0.6rem;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            EMERGENCY PROTOCOL ACTIVATED: 30-SECOND TIMER EXPIRED
+          </h3>
+          <p style="color: #ffcdd2; font-size: 0.9rem; margin-top: 0.5rem; line-height: 1.5;">
+            The driver did not respond to the safety prompt. The autonomous emergency dispatch system has 
+            initiated an AI Voice call to 911 / 112 emergency services and broadcasted proximity rescue alerts.
+          </p>
+        </div>
+        <div class="status-badge" style="background: rgba(255, 23, 68, 0.2); color: var(--accent-danger); border-color: var(--accent-danger);">
+          AI DISPATCH TRANSMITTING
+        </div>
+      </div>
+
+      <!-- AI Voice Dispatch Speech Box -->
+      <div class="ai-voice-box speaking" id="aiVoiceBox">
+        <div class="soundwave">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--accent-cyan); font-weight: 700; margin-bottom: 0.25rem;">
+            Autonomous AI Voice Dispatch Call (Audio Readout Active)
+          </div>
+          <div id="aiVoiceTranscript" style="font-family: var(--font-mono); font-size: 0.85rem; color: #fff; line-height: 1.4;">
+            Connecting to emergency audio dispatch...
+          </div>
+        </div>
+        <button class="btn btn-outline" id="btnReplayVoice" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">
+          Replay Voice
+        </button>
+      </div>
+
+      <!-- Proximity alerts status -->
+      <div style="margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-muted);">
+        <strong>Proximity Rescue Network:</strong> Broadcasted SOS beacon with GPS coordinates to 3 nearby responders within 5 km radius.
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       CRITICAL POP-UP MODAL: 30-SECOND USER CONFIRMATION MECHANISM
+       Section 3.3 Diana George et al.:
+       "When a potential accident is detected, a timer confirmation stage starts.
+       An alert is sent to the user and are asked to confirm their safety within 30s.
+       If user is safe, alert is deactivated. Otherwise, it is considered an emergency."
+       ========================================================================= -->
+  <div class="crash-modal-overlay" id="crashModalOverlay" style="display: none;">
+    <div class="crash-modal">
+      <div class="alert-siren-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+
+      <h2>CRASH DETECTED!</h2>
+      <p class="alert-desc">
+        LifeLink multi-condition algorithms verified a severe collision. 
+        If you are conscious and safe, tap below immediately to abort emergency service dispatch.
+      </p>
+
+      <!-- 30-Second Countdown Clock -->
+      <div class="countdown-container">
+        <svg class="countdown-svg" viewBox="0 0 130 130">
+          <circle class="countdown-track" cx="65" cy="65" r="55"></circle>
+          <circle class="countdown-progress" id="countdownCircle" cx="65" cy="65" r="55"></circle>
+        </svg>
+        <div class="countdown-digits">
+          <span id="countdownNumber">30</span>
+          <div class="countdown-unit">SEC</div>
+        </div>
+      </div>
+
+      <!-- User Safe Action Button -->
+      <button class="btn-i-am-safe" id="btnUserSafe">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        I AM SAFE / FALSE ALARM (CANCEL CALL)
+      </button>
+
+      <p class="safe-subtext">
+        If no button is pressed before the timer reaches 0, LifeLink will automatically contact 
+        emergency services with your exact GPS coordinates and crash telemetry.
+      </p>
+  <!-- iOBD DETECTOR SETUP MODAL -->
+  <div class="crash-modal-overlay" id="obdModalOverlay" style="display: none; background: rgba(8, 11, 17, 0.88);">
+    <div class="glass-card" style="max-width: 580px; width: 100%; padding: 2rem; border-color: var(--accent-cyan);">
+      <div class="card-header">
+        <div class="card-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5 12 23V1l5.5 5.5-11 11"/></svg>
+          iOBD Detector Hardware Parameters
+        </div>
+        <button class="btn btn-outline" onclick="closeObdModal()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">✕ Close</button>
+      </div>
+
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        Configure the vehicle's onboard diagnostic (OBD-II) Bluetooth receiver, CAN bus protocol, and IMU accelerometer sensitivity.
+      </p>
+
+      <form id="formUpdateObd" onsubmit="handleUpdateObd(event)">
+        <div class="grid-2 mb-2">
+          <div>
+            <label class="form-label">OBD-II Device Model</label>
+            <input type="text" class="input-field" id="modalObdName" required value="ELM327-Bluetooth-v2.1">
+          </div>
+          <div>
+            <label class="form-label">Bluetooth MAC / Address</label>
+            <input type="text" class="input-field" id="modalObdMac" required value="00:1D:A5:68:90:E4">
+          </div>
+        </div>
+
+        <div class="grid-2 mb-2">
+          <div>
+            <label class="form-label">OBD Bus Protocol</label>
+            <select class="input-field" id="modalObdProtocol">
+              <option value="ISO 15765-4 CAN (11 bit, 500 kbaud)">ISO 15765-4 CAN (11 bit, 500 kbaud)</option>
+              <option value="ISO 15765-4 CAN (29 bit, 500 kbaud)">ISO 15765-4 CAN (29 bit, 500 kbaud)</option>
+              <option value="ISO 9141-2">ISO 9141-2</option>
+              <option value="Automatic (ATSP0)">Automatic (ATSP0)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Serial Baud Rate</label>
+            <select class="input-field" id="modalObdBaud">
+              <option value="38400">38400 baud</option>
+              <option value="9600">9600 baud</option>
+              <option value="115200">115200 baud</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2 mb-3">
+          <div>
+            <label class="form-label">IMU Sensor Type</label>
+            <select class="input-field" id="modalObdImu">
+              <option value="MPU-6050 6-Axis (±8g, ±500°/s)">MPU-6050 6-Axis (±8g, ±500°/s)</option>
+              <option value="ADXL345 3-Axis (±16g)">ADXL345 3-Axis (±16g)</option>
+              <option value="Smartphone Internal IMU">Smartphone Internal IMU</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Sample Rate</label>
+            <select class="input-field" id="modalObdRate">
+              <option value="5">5 Hz (200 ms)</option>
+              <option value="10">10 Hz (100 ms)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="closeObdModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save iOBD Specs</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/js/user.js"></script>
+</body>
+</html>

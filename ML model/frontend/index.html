@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LifeLink - Multi-Parameter Crash Detection & Emergency Response</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="/static/js/theme.js"></script>
+  <style>
+    .hero-section {
+      text-align: center;
+      padding: 4rem 1.5rem 3rem 1.5rem;
+      position: relative;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      color: var(--accent-cyan);
+      padding: 0.4rem 1rem;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 1.5rem;
+    }
+    .hero-title {
+      font-size: 3.2rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #ffffff 30%, #76b6fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      max-width: 760px;
+      margin: 0 auto 2.5rem auto;
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .portal-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 2rem;
+      max-width: 960px;
+      margin: 0 auto 4rem auto;
+    }
+    .portal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      padding: 2.25rem;
+      text-align: left;
+      position: relative;
+      transition: all 0.35s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .portal-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--accent-cyan);
+      box-shadow: var(--shadow-glow-cyan);
+    }
+    .portal-card.admin:hover {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 30px rgba(124, 77, 255, 0.3);
+    }
+    .portal-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 14px;
+      background: rgba(0, 229, 255, 0.12);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      color: var(--accent-cyan);
+    }
+    .portal-card.admin .portal-icon {
+      background: rgba(124, 77, 255, 0.12);
+      border-color: rgba(124, 77, 255, 0.3);
+      color: var(--accent-purple);
+    }
+    .portal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.75rem;
+    }
+    .portal-desc {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      margin-bottom: 1.75rem;
+    }
+    .feature-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+    .chip {
+      font-size: 0.72rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-glass);
+      color: var(--text-muted);
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+    }
+    .research-highlight {
+      background: rgba(14, 20, 32, 0.75);
+      border: 1px solid var(--border-glass);
+      border-radius: 18px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+    }
+    .metrics-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+    @media (max-width: 800px) {
+      .metrics-summary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/" class="nav-brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>LifeLink</h1>
+        <p>Post-Crash Decision & Response System</p>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="/login" class="nav-link" id="navDriverLink">Driver Login</a>
+      <a href="/login?denied=admin" class="nav-link" id="navAdminLink">Admin Portal</a>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch Light (Red & White) / Dark HUD">
+        <span class="theme-toggle-icon">☀️</span>
+        <span class="theme-toggle-text">Red & White</span>
+      </button>
+      <div class="status-badge" id="systemStatusBadge">
+        <span class="status-dot"></span>
+        SYSTEM OPERATIONAL
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="hero-section">
+      <div class="hero-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        RESEARCH-BACKED POST-ACCIDENT VALIDATION
+      </div>
+      <h1 class="hero-title">LifeLink: Multi-Parameter Crash Detection</h1>
+      <p class="hero-subtitle">
+        Strictly post-accident verification with adaptive false alarm suppression.
+        Ingests real-time Bluetooth OBD-II & 3-axis IMU sensor feeds, eliminates pothole & hard-braking false positives, 
+        and executes 30-second driver safety confirmations with autonomous AI voice emergency dispatch.
+      </p>
+
+      <div class="portal-cards">
+        <!-- USER / DRIVER CARD -->
+        <div class="portal-card">
+          <div>
+            <div class="portal-icon">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+            </div>
+            <h2 class="portal-title">Driver / In-Car Portal</h2>
+            <p class="portal-desc">
+              Connect your car's Bluetooth OBD-II detector or stream live telemetry. 
+              Monitors speed, impact G-force vector, tilt angle, and deceleration. 
+              Features the interactive 30-second cancellation safety button and autonomous emergency AI caller.
+            </p>
+            <div class="feature-chips">
+              <span class="chip">Driver Authentication</span>
+              <span class="chip">iOBD Detector Setup</span>
+              <span class="chip">3-Axis G Force</span>
+              <span class="chip">30s Safety Modal</span>
+              <span class="chip">AI Voice Dispatch</span>
+            </div>
+          </div>
+          <a href="/login" id="btnLaunchDriver" class="btn btn-primary" style="width: 100%;">
+            Driver Login & Setup &rarr;
+          </a>
+        </div>
+
+        <!-- ADMIN CARD -->
+        <div class="portal-card admin">
+          <div>
+            <div class="portal-icon">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h2 class="portal-title">Admin & Drill Studio</h2>
+            <p class="portal-desc">
+              Centralized fleet monitoring, driver lookup, black-box forensic telemetry replays, and the 
+              <strong>Mock Drill Studio</strong> to inject pseudo-accidents (Rollover, Head-on) and 
+              verify false alarm suppression against speed bumps and hard emergency braking.
+            </p>
+            <div class="feature-chips">
+              <span class="chip">Admin Role Protected</span>
+              <span class="chip">Driver Lookup</span>
+              <span class="chip">Mock Drill Studio</span>
+              <span class="chip">Weight Tuning</span>
+              <span class="chip">Black-Box Replay</span>
+            </div>
+          </div>
+          <a href="/login?denied=admin" id="btnLaunchAdmin" class="btn btn-primary" style="background: linear-gradient(135deg, var(--accent-purple), #2979ff); width: 100%;">
+            Admin Commander Login &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Research Paper Highlights -->
+    <div class="research-highlight">
+      <div class="flex-between">
+        <div>
+          <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff;">
+            Validated Performance Metrics
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+            Published benchmarks from Dayananda Sagar University (Diana George et al.)
+          </p>
+        </div>
+        <span class="chip" style="color: var(--accent-cyan); border-color: rgba(0, 229, 255, 0.3);">
+          Equations 1 to 5 Fully Integrated
+        </span>
+      </div>
+
+      <div class="metrics-summary-grid">
+        <div class="metric-card">
+          <div class="metric-label">Detection Accuracy</div>
+          <div class="metric-value text-cyan">96%</div>
+          <div class="metric-threshold-tag">vs 72% Single-Trigger</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">False Alarm Rate</div>
+          <div class="metric-value text-green">~4%</div>
+          <div class="metric-threshold-tag">Dropped from 18%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Emergency Response Time</div>
+          <div class="metric-value text-warning">35s</div>
+          <div class="metric-threshold-tag">vs 120s Conventional</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Offline SMS Reliability</div>
+          <div class="metric-value" style="color: #d1c4e9;">90%</div>
+          <div class="metric-threshold-tag">GSM Cellular Fallback</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer style="text-align: center; padding: 2rem; border-top: 1px solid var(--border-glass); color: var(--text-dim); font-size: 0.82rem;">
+    LifeLink &copy; 2026 &bull; Multi-Parameter Crash Detection with Adaptive False Alarm Suppression &bull; Built with FastAPI & Python
+  </footer>
+
+  <script>
+    async function checkStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        const badge = document.getElementById('systemStatusBadge');
+        if (data.status === 'OPERATIONAL') {
+          badge.innerHTML = `<span class="status-dot"></span> SYSTEM OPERATIONAL`;
+          badge.style.color = 'var(--accent-green)';
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    checkStatus();
+  </script>
+</body>
+</html>

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LifeLink - Authentication & Driver Registration</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="/static/js/theme.js"></script>
+  <style>
+    .auth-container {
+      max-width: 680px;
+      margin: 2.5rem auto 4rem auto;
+      padding: 0 1.5rem;
+    }
+    .auth-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    }
+    .auth-tabs {
+      display: flex;
+      background: rgba(14, 20, 32, 0.8);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 0.35rem;
+      margin-bottom: 2rem;
+      gap: 0.35rem;
+    }
+    .auth-tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .auth-tab.active {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(41, 121, 255, 0.15));
+      color: #fff;
+      border: 1px solid rgba(0, 229, 255, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    .auth-tab.admin-tab.active {
+      background: linear-gradient(135deg, rgba(124, 77, 255, 0.2), rgba(41, 121, 255, 0.15));
+      border-color: rgba(124, 77, 255, 0.5);
+    }
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      margin: 1.5rem 0 1rem 0;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 600px) {
+      .form-grid-2 { grid-template-columns: 1fr; }
+      .auth-card { padding: 1.5rem; }
+    }
+    .preset-pills {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border-glass);
+      flex-wrap: wrap;
+    }
+    .preset-pill {
+      font-size: 0.78rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-glass);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .preset-pill:hover {
+      background: rgba(0, 229, 255, 0.1);
+      color: #fff;
+      border-color: var(--accent-cyan);
+    }
+    .access-notice {
+      background: rgba(255, 23, 68, 0.1);
+      border: 1px solid rgba(255, 23, 68, 0.3);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      color: #ffcdd2;
+      font-size: 0.82rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/" class="nav-brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>LifeLink Access</h1>
+        <p>Driver & Fleet Authorization Portal</p>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-link">Home</a>
+      <button class="theme-toggle-btn" onclick="toggleTheme()" title="Switch Light (Red & White) / Dark HUD">
+        <span class="theme-toggle-icon">☀️</span>
+        <span class="theme-toggle-text">Red & White</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <div id="accessDeniedNotice" class="access-notice">
+        <strong>Access Denied:</strong> Drivers cannot access the Admin Portal. Please log in with Fleet Administrator credentials.
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tabDriverLogin" onclick="switchTab('driver_login')">
+          Driver Login
+        </div>
+        <div class="auth-tab" id="tabRegister" onclick="switchTab('register')">
+          New Driver & iOBD Setup
+        </div>
+        <div class="auth-tab admin-tab" id="tabAdminLogin" onclick="switchTab('admin_login')">
+          Admin Login
+        </div>
+      </div>
+
+      <!-- 1. DRIVER LOGIN FORM -->
+      <form id="formDriverLogin" onsubmit="handleLogin(event, 'user')">
+        <div class="form-group">
+          <label class="form-label">Driver Username / Email</label>
+          <input type="text" class="input-field" id="driverUsername" value="driver" required placeholder="Enter username (e.g. driver)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="input-field" id="driverPassword" value="user123" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; margin-top: 0.5rem;">
+          Enter In-Car Driver HUD &rarr;
+        </button>
+      </form>
+
+      <!-- 2. ADMIN LOGIN FORM -->
+      <form id="formAdminLogin" style="display: none;" onsubmit="handleLogin(event, 'admin')">
+        <div style="background: rgba(124, 77, 255, 0.1); border: 1px solid rgba(124, 77, 255, 0.3); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.8rem; color: #d1c4e9;">
+          <strong>Fleet Administrator Access Only:</strong> Authorized personnel only. Mock Drill execution and fleet-wide calibration controls.
+        </div>
+        <div class="form-group">
+          <label class="form-label">Admin Username</label>
+          <input type="text" class="input-field" id="adminUsername" value="admin" required placeholder="admin">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Admin Password</label>
+          <input type="password" class="input-field" id="adminPassword" value="admin123" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, var(--accent-purple), #2979ff); width: 100%; padding: 0.85rem; margin-top: 0.5rem;">
+          Authenticate Fleet Commander &rarr;
+        </button>
+      </form>
+
+      <!-- 3. COMPREHENSIVE REGISTRATION & iOBD DETECTOR SETUP FORM -->
+      <form id="formRegister" style="display: none;" onsubmit="handleRegister(event)">
+        <!-- Section A: Driver Personal Information -->
+        <div class="form-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          1. Driver Personal Details
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="input-field" id="regFullName" required placeholder="e.g. John Doe">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" class="input-field" id="regPhone" required placeholder="+91-98765-43210">
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Account Username</label>
+            <input type="text" class="input-field" id="regUsername" required placeholder="e.g. jdoe24">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="input-field" id="regPassword" required placeholder="Min 4 characters">
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="input-field" id="regEmail" placeholder="john.doe@gmail.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Blood Group (for Emergency Dispatch)</label>
+            <select class="input-field" id="regBloodGroup">
+              <option value="O+">O Positive (O+)</option>
+              <option value="O-">O Negative (O-)</option>
+              <option value="A+">A Positive (A+)</option>
+              <option value="A-">A Negative (A-)</option>
+              <option value="B+">B Positive (B+)</option>
+              <option value="B-">B Negative (B-)</option>
+              <option value="AB+">AB Positive (AB+)</option>
+              <option value="AB-">AB Negative (AB-)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Section B: Vehicle Information -->
+        <div class="form-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+          2. Vehicle Details
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Vehicle Registration Number</label>
+            <input type="text" class="input-field" id="regVehicleId" required placeholder="e.g. KA-05-LL-8899">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vehicle Make & Model</label>
+            <input type="text" class="input-field" id="regVehicleModel" required placeholder="e.g. Tata Nexon EV 2024">
+          </div>
+        </div>
+
+        <!-- Section C: Emergency Contacts -->
+        <div class="form-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          3. Emergency Contacts (for Autonomous AI Calling & SMS)
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Primary Contact Name</label>
+            <input type="text" class="input-field" id="regContact1Name" required placeholder="e.g. Sarah Doe (Spouse)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Primary Contact Phone</label>
+            <input type="tel" class="input-field" id="regContact1Phone" required placeholder="+91-98765-11223">
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Secondary Contact Name</label>
+            <input type="text" class="input-field" id="regContact2Name" placeholder="e.g. Dr. Ramesh (Physician)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Secondary Contact Phone</label>
+            <input type="tel" class="input-field" id="regContact2Phone" placeholder="+91-98765-99887">
+          </div>
+        </div>
+
+        <!-- Section D: In-Depth iOBD Detector Setup -->
+        <div class="form-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5 17.5 17.5 12 23V1l5.5 5.5-11 11"/></svg>
+          4. iOBD Detector & Sensor Hardware Specifications
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">OBD-II Device Model</label>
+            <input type="text" class="input-field" id="regObdName" required value="ELM327-Bluetooth-v2.1" placeholder="e.g. ELM327 / VGate iCar">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bluetooth MAC / Device UUID</label>
+            <input type="text" class="input-field" id="regObdMac" required value="00:1D:A5:68:90:E4" placeholder="00:1D:A5:xx:xx:xx">
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">OBD Protocol Standard</label>
+            <select class="input-field" id="regObdProtocol">
+              <option value="ISO 15765-4 CAN (11 bit, 500 kbaud)">ISO 15765-4 CAN (11 bit, 500 kbaud) - Most Common</option>
+              <option value="ISO 15765-4 CAN (29 bit, 500 kbaud)">ISO 15765-4 CAN (29 bit, 500 kbaud)</option>
+              <option value="ISO 9141-2">ISO 9141-2 (Asian & European)</option>
+              <option value="SAE J1850 PWM">SAE J1850 PWM (Ford)</option>
+              <option value="SAE J1850 VPW">SAE J1850 VPW (GM)</option>
+              <option value="Automatic Detection (ATSP0)">Automatic Detection (ATSP0)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Serial Baud Rate</label>
+            <select class="input-field" id="regObdBaud">
+              <option value="38400">38400 baud (Standard Bluetooth ELM327)</option>
+              <option value="9600">9600 baud (Standard Serial)</option>
+              <option value="115200">115200 baud (High-Speed BLE / USB)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">IMU Sensor Type (Accelerometer & Gyro)</label>
+            <select class="input-field" id="regObdImu">
+              <option value="MPU-6050 6-Axis (±8g, ±500°/s)">MPU-6050 6-Axis (±8g, ±500°/s)</option>
+              <option value="ADXL345 3-Axis (±16g) + L3G4200D">ADXL345 3-Axis (±16g) + L3G4200D</option>
+              <option value="Smartphone Embedded Gyro & Accelerometer">Smartphone Embedded Gyro & Accelerometer</option>
+              <option value="Integrated OBD Internal G-Sensor">Integrated OBD Internal G-Sensor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sampling Frequency</label>
+            <select class="input-field" id="regObdRate">
+              <option value="5">5 Hz (200ms per frame)</option>
+              <option value="10">10 Hz (100ms per frame)</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.95rem; margin-top: 1.5rem; font-size: 1rem;">
+          Complete Registration & Launch In-Car HUD &rarr;
+        </button>
+      </form>
+
+      <!-- Quick demo login helpers -->
+      <div class="preset-pills">
+        <span style="font-size: 0.75rem; color: var(--text-dim); width: 100%;">Instant Demo Credentials:</span>
+        <button class="preset-pill" onclick="quickFill('driver', 'user123', 'driver')">
+          👤 Driver: Alex Morgan (KA-05-LL-2026)
+        </button>
+        <button class="preset-pill" onclick="quickFill('admin', 'admin123', 'admin')">
+          🛡️ Admin: Fleet Commander
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check URL params for access denied message
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('denied') === 'admin') {
+      document.getElementById('accessDeniedNotice').style.display = 'block';
+      switchTab('admin_login');
+    }
+
+    function switchTab(mode) {
+      document.getElementById('tabDriverLogin').classList.remove('active');
+      document.getElementById('tabRegister').classList.remove('active');
+      document.getElementById('tabAdminLogin').classList.remove('active');
+
+      document.getElementById('formDriverLogin').style.display = 'none';
+      document.getElementById('formRegister').style.display = 'none';
+      document.getElementById('formAdminLogin').style.display = 'none';
+
+      if (mode === 'driver_login') {
+        document.getElementById('tabDriverLogin').classList.add('active');
+        document.getElementById('formDriverLogin').style.display = 'block';
+      } else if (mode === 'register') {
+        document.getElementById('tabRegister').classList.add('active');
+        document.getElementById('formRegister').style.display = 'block';
+      } else if (mode === 'admin_login') {
+        document.getElementById('tabAdminLogin').classList.add('active');
+        document.getElementById('formAdminLogin').style.display = 'block';
+      }
+    }
+
+    function quickFill(user, pass, mode) {
+      if (mode === 'driver') {
+        switchTab('driver_login');
+        document.getElementById('driverUsername').value = user;
+        document.getElementById('driverPassword').value = pass;
+      } else {
+        switchTab('admin_login');
+        document.getElementById('adminUsername').value = user;
+        document.getElementById('adminPassword').value = pass;
+      }
+    }
+
+    async function handleLogin(e, expectedRole) {
+      e.preventDefault();
+      const username = expectedRole === 'admin' 
+        ? document.getElementById('adminUsername').value 
+        : document.getElementById('driverUsername').value;
+      const password = expectedRole === 'admin' 
+        ? document.getElementById('adminPassword').value 
+        : document.getElementById('driverPassword').value;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.status === 'SUCCESS') {
+          // Store session token and role
+          localStorage.setItem('lifelink_token', data.session.token);
+          localStorage.setItem('lifelink_role', data.session.role);
+          localStorage.setItem('lifelink_user', JSON.stringify(data.user_profile));
+
+          if (data.session.role === 'admin') {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = '/user';
+          }
+        } else {
+          alert("Login Failed: " + (data.detail || "Invalid credentials"));
+        }
+      } catch (err) {
+        alert("Login Error: " + err.message);
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const payload = {
+        username: document.getElementById('regUsername').value,
+        password: document.getElementById('regPassword').value,
+        full_name: document.getElementById('regFullName').value,
+        phone_number: document.getElementById('regPhone').value,
+        email: document.getElementById('regEmail').value,
+        blood_group: document.getElementById('regBloodGroup').value,
+        vehicle_id: document.getElementById('regVehicleId').value,
+        vehicle_make_model: document.getElementById('regVehicleModel').value,
+        emergency_contact_1_name: document.getElementById('regContact1Name').value,
+        emergency_contact_1_phone: document.getElementById('regContact1Phone').value,
+        emergency_contact_2_name: document.getElementById('regContact2Name').value,
+        emergency_contact_2_phone: document.getElementById('regContact2Phone').value,
+        obd_detector: {
+          device_name: document.getElementById('regObdName').value,
+          bluetooth_mac: document.getElementById('regObdMac').value,
+          obd_protocol: document.getElementById('regObdProtocol').value,
+          baud_rate: parseInt(document.getElementById('regObdBaud').value),
+          imu_sensor_type: document.getElementById('regObdImu').value,
+          sample_rate_hz: parseInt(document.getElementById('regObdRate').value)
+        }
+      };
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok && data.status === 'SUCCESS') {
+          localStorage.setItem('lifelink_token', data.session.token);
+          localStorage.setItem('lifelink_role', data.session.role);
+          localStorage.setItem('lifelink_user', JSON.stringify(data.profile));
+          alert("Registration Successful! Your driver profile and iOBD detector are configured.");
+          window.location.href = '/user';
+        } else {
+          alert("Registration Failed: " + (data.detail || "Error creating profile"));
+        }
+      } catch (err) {
+        alert("Registration Error: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
